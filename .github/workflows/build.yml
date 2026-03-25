@@ -33,24 +33,29 @@ jobs:
       - name: 버전 정보 생성
         run: python scripts/make_version.py
 
+      - name: SERVER_URL 삽입
+        run: python scripts/inject_url.py
+
       - name: 코드 난독화 (PyArmor)
         run: |
-          pyarmor gen --output dist_obf win32_utils.py processes.py gui_base.py gui_ui.py gui_run.py auth.py potplayer_lipsync_mp.py
-        env:
-          AUTH_SERVER_URL: ${{ secrets.AUTH_SERVER_URL }}
+          pyarmor gen --output dist_obf app_icon.py win32_utils.py processes.py gui_base.py gui_ui.py gui_run.py gui_auth.py auth.py
+          copy potplayer_lipsync_mp.py dist_obf\potplayer_lipsync_mp.py
 
       - name: PyInstaller EXE 빌드
         run: >
           pyinstaller
+          --clean
           --onefile
           --noconsole
-          --name "Auto Sync"
+          --name "Auto Sinc"
           --icon "app.ico"
           --version-file "version_info.txt"
+          --hidden-import="app_icon"
           --hidden-import="win32_utils"
           --hidden-import="processes"
           --hidden-import="gui_base"
           --hidden-import="gui_ui"
+          --hidden-import="gui_auth"
           --hidden-import="gui_run"
           --hidden-import="auth"
           --hidden-import="cv2"
@@ -59,7 +64,9 @@ jobs:
           --hidden-import="mss"
           --hidden-import="win32api"
           --hidden-import="win32con"
+          --hidden-import="win32gui"
           --hidden-import="tkinter"
+          --hidden-import="tkinter.messagebox"
           --hidden-import="multiprocessing"
           --hidden-import="comtypes"
           --hidden-import="comtypes.client"
@@ -67,14 +74,30 @@ jobs:
           --hidden-import="psutil"
           --hidden-import="pyaudiowpatch"
           --hidden-import="pystray"
+          --hidden-import="pystray._win32"
+          --hidden-import="pystray._base"
+          --hidden-import="pystray._util"
+          --hidden-import="pystray._util.win32"
+          --hidden-import="six"
           --hidden-import="PIL"
+          --hidden-import="PIL.Image"
+          --hidden-import="PIL._imaging"
+          --collect-all
+          PIL
+          --copy-metadata
+          Pillow
+          --hidden-import="winotify"
+          --hidden-import="urllib.request"
+          --hidden-import="urllib.parse"
+          --hidden-import="uuid"
+          --hidden-import="hashlib"
+          --hidden-import="platform"
           --hidden-import="pyarmor_runtime_000000"
           --collect-data cv2
           --add-data "lbpcascade_animeface.xml;."
+          --add-data "app.ico;."
           --add-data "dist_obf/pyarmor_runtime_000000;pyarmor_runtime_000000"
           dist_obf/potplayer_lipsync_mp.py
-        env:
-          AUTH_SERVER_URL: ${{ secrets.AUTH_SERVER_URL }}
 
       - name: 빌드 결과 확인
         run: dir dist\
@@ -83,6 +106,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: AutoSync-EXE
-          path: dist\Auto Sync.exe
+          path: dist\Auto Sinc.exe
           retention-days: 3
-
